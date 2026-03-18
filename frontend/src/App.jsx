@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+// 1. Importaciones de AWS Amplify
 import { Amplify } from 'aws-amplify'
 import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react'
 import '@aws-amplify/ui-react/styles.css'
 import './App.css'
 
-// 1. Configuración de AWS (Tus IDs reales)
+// 2. Configuración (Tus IDs reales)
 Amplify.configure({
   Auth: {
     Cognito: {
@@ -18,19 +19,17 @@ const API_BASE = "https://8iu9v78txc.execute-api.us-east-1.amazonaws.com"
 
 function App() {
   // --- LÓGICA DE AUTENTICACIÓN ---
-  // Extraemos authStatus para saber en qué estado está la sesión
   const { user, signOut, authStatus } = useAuthenticator((context) => [context.authStatus, context.user]);
   const [showLoginSection, setShowLoginSection] = useState(false); 
 
-  // --- ARREGLO PARA LA PANTALLA EN BLANCO ---
-  // En cuanto el estado pase a 'authenticated', cerramos la sección de login a la fuerza
+  // Efecto para cerrar el login automáticamente al entrar
   useEffect(() => {
     if (authStatus === 'authenticated') {
       setShowLoginSection(false); 
     }
   }, [authStatus]);
 
-  // --- LÓGICA DE TAREAS (Tus funciones originales 100% funcionales) ---
+  // --- LÓGICA DE TAREAS (ESTADO ORIGINAL COMPLETO) ---
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -39,7 +38,13 @@ function App() {
   const [editingId, setEditingId] = useState(null)
   const [editingTitle, setEditingTitle] = useState('')
 
+  // --- FUNCIONES ORIGINALES (SIN RECORTES) ---
   async function fetchTasks() {
+    if (!API_BASE) {
+      setError('Configura la URL de la API.')
+      setLoading(false)
+      return
+    }
     setError(null)
     try {
       const res = await fetch(`${API_BASE}/tasks`)
@@ -60,8 +65,11 @@ function App() {
 
   async function addTask(e) {
     e.preventDefault()
+    // PROTECCIÓN: Solo si está autenticado
+    if (authStatus !== 'authenticated') return;
+
     const title = newTaskTitle.trim()
-    if (!title || adding) return
+    if (!title || !API_BASE || adding) return
     setAdding(true)
     setError(null)
     try {
@@ -81,6 +89,9 @@ function App() {
   }
 
   async function toggleCompleted(task) {
+    // PROTECCIÓN: Solo si está autenticado
+    if (authStatus !== 'authenticated') return;
+    if (!API_BASE) return
     setError(null)
     try {
       const res = await fetch(`${API_BASE}/tasks/${task.id}`, {
@@ -96,8 +107,10 @@ function App() {
   }
 
   async function saveEdit(id) {
+    // PROTECCIÓN: Solo si está autenticado
+    if (authStatus !== 'authenticated') return;
     const title = editingTitle.trim()
-    if (title === '') return
+    if (title === '' || !API_BASE) return
     setError(null)
     try {
       const res = await fetch(`${API_BASE}/tasks/${id}`, {
@@ -115,7 +128,9 @@ function App() {
   }
 
   async function deleteTask(id) {
-    if (!window.confirm('¿Eliminar esta tarea?')) return
+    // PROTECCIÓN: Solo si está autenticado
+    if (authStatus !== 'authenticated') return;
+    if (!API_BASE || !window.confirm('¿Eliminar esta tarea?')) return
     setError(null)
     try {
       const res = await fetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' })
@@ -127,6 +142,7 @@ function App() {
   }
 
   function startEdit(task) {
+    if (authStatus !== 'authenticated') return;
     setEditingId(task.id)
     setEditingTitle(task.title)
   }
@@ -136,74 +152,73 @@ function App() {
     setEditingTitle('')
   }
 
-  // --- RENDERIZADO ---
   return (
     <div className="app">
-      {/* 1. HEADER DINÁMICO */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h1>Task Master Pro v2.0 🚀</h1>
+        <h1>Organizador Pro Remasterizado v2.0 🚀</h1>
         
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           {authStatus === 'authenticated' ? (
             <>
-              <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-                👤 <strong>{user?.username}</strong>
-              </span>
+              <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>👤 <strong>{user?.username}</strong></span>
               <button onClick={signOut} className="btn-small danger">Cerrar Sesión</button>
             </>
           ) : (
-            <button 
-              onClick={() => setShowLoginSection(!showLoginSection)} 
-              className="btn-small primary"
-            >
-              {showLoginSection ? 'Volver a la Lista' : 'Entrar / Registrarse'}
+            <button onClick={() => setShowLoginSection(!showLoginSection)} className="btn-small primary">
+              {showLoginSection ? 'Cancelar' : 'Entrar / Registrarse'}
             </button>
           )}
         </div>
       </header>
 
-      {/* 2. SECCIÓN DE LOGIN (Solo se muestra si el usuario la pide y NO está autenticado) */}
+      {/* SECCIÓN DE AUTENTICACIÓN */}
       {showLoginSection && authStatus !== 'authenticated' && (
-        <div className="auth-overlay" style={{ marginBottom: '40px', padding: '20px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
+        <div className="auth-card-container" style={{ marginBottom: '40px' }}>
           <Authenticator />
         </div>
       )}
 
-      {/* 3. LISTA DE TAREAS (Siempre visible, pero se atenúa si el login está abierto) */}
+      {/* CONTENIDO PRINCIPAL */}
       <main style={{ 
         opacity: (showLoginSection && authStatus !== 'authenticated') ? 0.2 : 1,
         pointerEvents: (showLoginSection && authStatus !== 'authenticated') ? 'none' : 'auto',
-        transition: 'all 0.4s ease'
+        transition: 'opacity 0.4s ease'
       }}>
+        
+        {/* FORMULARIO: Bloqueado si no hay sesión */}
         <form className="add-form" onSubmit={addTask}>
           <input
             type="text"
-            placeholder="Nueva tarea pública..."
+            placeholder={authStatus === 'authenticated' ? "Nueva tarea..." : "Inicia sesión para añadir tareas"}
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
-            disabled={adding}
+            disabled={adding || authStatus !== 'authenticated'}
           />
-          <button type="submit" disabled={!newTaskTitle.trim() || adding}>
-            {adding ? '...' : 'Añadir'}
+          <button type="submit" disabled={!newTaskTitle.trim() || adding || authStatus !== 'authenticated'}>
+            {adding ? 'Añadiendo…' : 'Añadir'}
           </button>
         </form>
 
         {error && <p className="error">{error}</p>}
 
         {loading ? (
-          <p className="loading">Cargando tareas...</p>
+          <p className="loading">Cargando tareas…</p>
         ) : (
           <ul className="task-list">
             {tasks.length === 0 && !error && (
-              <li className="empty">No hay tareas. ¡Agrega una!</li>
+              <li className="empty">No hay tareas públicas.</li>
             )}
             {tasks.map((task) => (
               <li key={task.id} className={`task ${task.completed ? 'completed' : ''}`}>
+                
+                {/* Checkbox: Deshabilitado si no hay sesión */}
                 <input
                   type="checkbox"
                   checked={task.completed}
                   onChange={() => toggleCompleted(task)}
+                  disabled={authStatus !== 'authenticated'}
                 />
+
                 {editingId === task.id ? (
                   <>
                     <input
@@ -217,14 +232,20 @@ function App() {
                       }}
                       autoFocus
                     />
-                    <button onClick={() => saveEdit(task.id)} className="btn-small primary">Listo</button>
-                    <button onClick={cancelEdit} className="btn-small">X</button>
+                    <button onClick={() => saveEdit(task.id)} className="btn-small primary">Guardar</button>
+                    <button onClick={cancelEdit} className="btn-small">Cancelar</button>
                   </>
                 ) : (
                   <>
                     <span className="task-title">{task.title}</span>
-                    <button onClick={() => startEdit(task)} className="btn-small">Ed</button>
-                    <button onClick={() => deleteTask(task.id)} className="btn-small danger">Del</button>
+                    
+                    {/* ACCIONES: Solo visibles si está autenticado */}
+                    {authStatus === 'authenticated' && (
+                      <div className="actions">
+                        <button onClick={() => startEdit(task)} className="btn-small">Editar</button>
+                        <button onClick={() => deleteTask(task.id)} className="btn-small danger">Eliminar</button>
+                      </div>
+                    )}
                   </>
                 )}
               </li>
