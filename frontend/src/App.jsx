@@ -9,8 +9,8 @@ import './App.css'
 Amplify.configure({
   Auth: {
     Cognito: {
-      userPoolId: '', // TODO: Reemplazar con el ID que arroje el backend
-      userPoolClientId: '', // TODO: Reemplazar con el Client ID que arroje el backend
+      userPoolId: 'us-east-1_2eVAgG533',
+      userPoolClientId: 'pjcorglvh59efobn8v3e9eolf',
     }
   }
 });
