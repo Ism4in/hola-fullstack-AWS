@@ -34,7 +34,7 @@ variable "github_token" {
 variable "repository" {
   description = "URL del repositorio Git del frontend"
   type        = string
-  default     = "https://github.com/javiercl/vite-hola-fullstack.git"
+  default     = "https://github.com/Ism4in/hola-fullstack-AWS.git"
 }
 
 variable "branch_name" {

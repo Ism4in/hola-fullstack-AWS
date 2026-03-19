@@ -9,13 +9,13 @@ import './App.css'
 Amplify.configure({
   Auth: {
     Cognito: {
-      userPoolId: 'us-east-1_Z4EzZ84Qw',
-      userPoolClientId: '7bjuvhqku7ckfvegru5l1l8ogd',
+      userPoolId: '', // TODO: Reemplazar con el ID que arroje el backend
+      userPoolClientId: '', // TODO: Reemplazar con el Client ID que arroje el backend
     }
   }
 });
 
-const API_BASE = "https://8iu9v78txc.execute-api.us-east-1.amazonaws.com/"
+const API_BASE = import.meta.env.VITE_API_URL
 
 function App() {
   // --- LÓGICA DE AUTENTICACIÓN ---
