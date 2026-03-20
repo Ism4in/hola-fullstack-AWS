@@ -230,7 +230,13 @@ function App() {
                   </div>
                 ) : (
                   <>
-                    <span className="task-title">{task.title}</span>
+                    <span 
+                      className="task-title" 
+                      style={{ 
+                        textDecoration: task.completed ? 'line-through red 2px' : 'none' 
+                      }}>
+                      {task.title}
+                    </span>
                     {authStatus === 'authenticated' && (
                       <div className="actions">
                         <button onClick={() => startEdit(task)} className="btn-small">✏️</button>
